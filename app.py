@@ -42,9 +42,23 @@ pred_label = "✅ Present" if pred == 1 else "❌ Absent"
 st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 
 # SHAP Summary Plot (bar format – most robust)
-st.subheader("🔍 SHAP Summary Plot")
-shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
-st.pyplot(bbox_inches="tight", dpi=300)
+# Show top SHAP values as a bar chart
+import numpy as np
+
+st.subheader("🔍 Top SHAP Values (Manual)")
+shap_df = pd.DataFrame({
+    "Feature": input_df.columns,
+    "SHAP Value": shap_values[0]  # single prediction
+}).sort_values(by="SHAP Value", key=abs, ascending=False)
+
+top_shap = shap_df.head(10)
+st.dataframe(top_shap)
+
+plt.figure(figsize=(6, 4))
+plt.barh(top_shap["Feature"], top_shap["SHAP Value"])
+plt.title("Top SHAP Contributions to Prediction")
+plt.gca().invert_yaxis()
+st.pyplot(plt)
 
 # --- Feature importance plot ---
 st.subheader("📊 Global Feature Importance")
