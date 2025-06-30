@@ -6,8 +6,8 @@ import joblib
 import numpy as np
 
 # --- Load trained model and feature names ---
-model = joblib.load("rf_model_cetobacterium .pkl")
-feature_names = joblib.load("rf_model_features .pkl")
+model = joblib.load("rf_model_cetobacterium.pkl")
+feature_names = joblib.load("rf_model_features.pkl")
 explainer = shap.TreeExplainer(model)
 
 # --- App title ---
