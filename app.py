@@ -6,9 +6,49 @@ import joblib
 import numpy as np
 
 # --- Load trained model and feature names ---
-model = joblib.load("rf_model_cetobacterium.pkl")
-feature_names = joblib.load("rf_model_features.pkl")
+import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+import shap
+import os
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+# === Train model if not yet saved ===
+model_path = "rf_model_cetobacterium.pkl"
+feature_path = "rf_model_features.pkl"
+
+if not os.path.exists(model_path) or not os.path.exists(feature_path):
+    st.warning("Training model from scratch...")
+
+    # Load your CSV dataset
+    df = pd.read_csv("data/final_selected_features_dataset.csv")
+
+    # Define features
+    mp_type_cols = [col for col in df.columns if col.startswith("MP_Type_")]
+    species_cols = [col for col in df.columns if col.startswith("Species_")]
+    features = mp_type_cols + ['MP_Concentration', 'MP_Size', 'Exposure_Time'] + species_cols
+    X = df[features]
+    y = df['Cetobacterium_Present']
+
+    # Train model
+    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
+    model.fit(X_train, y_train)
+
+    # Save model and feature list
+    joblib.dump(model, model_path)
+    joblib.dump(X_train.columns.tolist(), feature_path)
+
+else:
+    model = joblib.load(model_path)
+
+# === Load features and SHAP ===
+feature_names = joblib.load(feature_path)
 explainer = shap.TreeExplainer(model)
+
 
 # --- App title ---
 st.title("🧬 Cetobacterium Predictor - Microplastic Exposure")
