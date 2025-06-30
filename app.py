@@ -52,9 +52,14 @@ except:
     shap_vector = shap_values[1][0]  # older SHAP fallback
 
 # Build SHAP bar chart
+# Flatten column names and SHAP values
+features = input_df.columns.tolist()
+shap_1d = shap_vector.flatten()
+
+# Now safely build the DataFrame
 shap_df = pd.DataFrame({
-    "Feature": input_df.columns,
-    "SHAP Value": shap_vector
+    "Feature": features,
+    "SHAP Value": shap_1d
 }).sort_values(by="SHAP Value", key=abs, ascending=False)
 
 top_shap = shap_df.head(10)
