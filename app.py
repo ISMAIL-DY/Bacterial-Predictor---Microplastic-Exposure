@@ -51,19 +51,27 @@ shap_values = explainer.shap_values(input_df)
 
 # Handle SHAP output structure
 if isinstance(shap_values, list):
-    shap_vector = shap_values[1][0]
+    shap_vector = shap_values[1][0]  # for binary classification
 else:
-    shap_vector = shap_values[0]
+    shap_vector = shap_values[0]     # newer SHAP versions
 
-shap_1d = shap_vector.flatten()
+shap_1d = np.array(shap_vector).flatten()
 features = input_df.columns.tolist()
+
 
 if len(shap_1d) != len(features):
     st.error(f"❌ SHAP vector length ({len(shap_1d)}) does not match input features ({len(features)}).")
     st.stop()
+st.write("🧪 Feature count:", len(features))
+st.write("🧪 SHAP vector length:", len(shap_1d))
 
-shap_df = pd.DataFrame({"Feature": features, "SHAP Value": shap_1d})
-shap_df = shap_df.sort_values(by="SHAP Value", key=abs, ascending=False)
+
+min_len = min(len(features), len(shap_1d))
+
+shap_df = pd.DataFrame({
+    "Feature": features[:min_len],
+    "SHAP Value": shap_1d[:min_len]
+}).sort_values(by="SHAP Value", key=abs, ascending=False)
 
 # --- Display SHAP Contributions ---
 top_shap = shap_df.head(10)
