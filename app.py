@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -25,44 +24,32 @@ st.title("🧬 Cetobacterium Predictor - Microplastic Exposure")
 st.markdown("Predict the presence of *Cetobacterium* based on microplastic exposure conditions.")
 
 st.sidebar.header("🧪 Exposure Inputs")
-st.sidebar.header("🧪 Exposure Inputs")
 mp_conc = st.sidebar.slider("MP Concentration (µg/mL)", 0, 2000, 1000)
 mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
-# --- Create full-length input vector ---
+# --- Create and populate input vector ---
 input_df = pd.DataFrame(columns=feature_names)
-input_df.loc[0] = 0
-input_df.loc[0, "MP_Concentration"] = mp_conc
-input_df.loc[0, "MP_Size"] = mp_size
-input_df.loc[0, "Exposure_Time"] = exposure_time
+input_df.loc[0] = 0  # initialize all features to zero
 
-# --- Fill in values from UI
-user_inputs = {
-    "MP_Concentration": mp_conc,
-    "MP_Size": mp_size,
-    "Exposure_Time": exposure_time,
-    "MP_Type_PE": mp_type_pe,
-    "MP_Type_PS": mp_type_ps
-}
-
-# Safely update any matching fields
-for key, value in user_inputs.items():
-    if key in input_df.columns:
-        input_df.loc[0, key] = value
+# Fill only the 3 features used in the model
+if "MP_Concentration" in input_df.columns:
+    input_df.at[0, "MP_Concentration"] = mp_conc
+if "MP_Size" in input_df.columns:
+    input_df.at[0, "MP_Size"] = mp_size
+if "Exposure_Time" in input_df.columns:
+    input_df.at[0, "Exposure_Time"] = exposure_time
 
 # --- Prediction ---
 pred = model.predict(input_df)[0]
 pred_label = "✅ Present" if pred == 1 else "❌ Absent"
 st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 
-assert input_df.shape[1] == len(feature_names), "❌ Feature count mismatch before SHAP"
-
 # --- SHAP Explanation ---
 st.subheader("🔍 SHAP Explanation")
 shap_values = explainer.shap_values(input_df)
 
-# Handle SHAP output shape
+# Handle SHAP output structure
 if isinstance(shap_values, list):
     shap_vector = shap_values[1][0]
 else:
@@ -78,6 +65,7 @@ if len(shap_1d) != len(features):
 shap_df = pd.DataFrame({"Feature": features, "SHAP Value": shap_1d})
 shap_df = shap_df.sort_values(by="SHAP Value", key=abs, ascending=False)
 
+# --- Display SHAP Contributions ---
 top_shap = shap_df.head(10)
 st.subheader("📊 Top SHAP Contributions to Prediction")
 st.dataframe(top_shap)
