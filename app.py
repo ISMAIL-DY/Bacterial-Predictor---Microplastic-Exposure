@@ -32,19 +32,22 @@ mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
 # --- Create full-length input vector ---
-input_df = pd.DataFrame([0] * len(feature_names), index=feature_names).T
-input_df = input_df.astype(float)
+input_df = pd.DataFrame(columns=feature_names)
+input_df.loc[0] = 0  # All features set to 0
 
-if 'MP_Concentration' in input_df.columns:
-    input_df.at[0, 'MP_Concentration'] = mp_conc
-if 'MP_Size' in input_df.columns:
-    input_df.at[0, 'MP_Size'] = mp_size
-if 'Exposure_Time' in input_df.columns:
-    input_df.at[0, 'Exposure_Time'] = exposure_time
-if 'MP_Type_PE' in input_df.columns:
-    input_df.at[0, 'MP_Type_PE'] = mp_type_pe
-if 'MP_Type_PS' in input_df.columns:
-    input_df.at[0, 'MP_Type_PS'] = mp_type_ps
+# --- Fill in values from UI
+user_inputs = {
+    "MP_Concentration": mp_conc,
+    "MP_Size": mp_size,
+    "Exposure_Time": exposure_time,
+    "MP_Type_PE": mp_type_pe,
+    "MP_Type_PS": mp_type_ps
+}
+
+# Safely update any matching fields
+for key, value in user_inputs.items():
+    if key in input_df.columns:
+        input_df.loc[0, key] = value
 
 # --- Prediction ---
 pred = model.predict(input_df)[0]
