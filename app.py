@@ -50,14 +50,21 @@ mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
 # --- Input Vector Construction ---
-input_df = pd.DataFrame([np.zeros(len(feature_names))], columns=feature_names)
-input_df["MP_Concentration"] = mp_conc
-input_df["MP_Size"] = mp_size
-input_df["Exposure_Time"] = exposure_time
-if "MP_Type_PE" in input_df.columns:
-    input_df["MP_Type_PE"] = mp_type_pe
-if "MP_Type_PS" in input_df.columns:
-    input_df["MP_Type_PS"] = mp_type_ps
+# Step 1: Create a full-zero row with correct feature names
+input_df = pd.DataFrame(np.zeros((1, len(feature_names))), columns=feature_names)
+
+# Step 2: Safely update only known user-controlled fields
+for col in input_df.columns:
+    if col == "MP_Concentration":
+        input_df[col] = mp_conc
+    elif col == "MP_Size":
+        input_df[col] = mp_size
+    elif col == "Exposure_Time":
+        input_df[col] = exposure_time
+    elif col == "MP_Type_PE":
+        input_df[col] = mp_type_pe
+    elif col == "MP_Type_PS":
+        input_df[col] = mp_type_ps
 
 # --- Prediction ---
 pred = model.predict(input_df)[0]
