@@ -75,7 +75,7 @@ if os.path.exists(DATA_PATH):
     ax2.plot(recall, precision, color='purple', lw=2)
     ax2.set_xlabel('Recall')
     ax2.set_ylabel('Precision')
-    ax2.set_title('Precision-Recall Curve")
+    ax2.set_title('Precision-Recall Curve')
     st.pyplot(fig2)
 
     # --- F1 Score and Report ---
