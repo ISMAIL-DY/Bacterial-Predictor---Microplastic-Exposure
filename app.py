@@ -3,12 +3,18 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
-import shap
 import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    roc_curve, auc, precision_recall_curve, f1_score, accuracy_score,
+    classification_report
+)
+from sklearn.model_selection import train_test_split, learning_curve
 
 # --- Paths ---
 MODEL_PATH = "rf_model_cetobacterium.pkl"
 FEATURES_PATH = "rf_model_features.pkl"
+DATA_PATH = "data/final_selected_features_dataset.csv"
 
 # --- Load model and features ---
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
@@ -17,7 +23,6 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
 
 model = joblib.load(MODEL_PATH)
 feature_names = joblib.load(FEATURES_PATH)
-explainer = shap.TreeExplainer(model)
 
 # --- Streamlit UI ---
 st.title("🧬 Cetobacterium Predictor - Microplastic Exposure")
@@ -28,66 +33,81 @@ mp_conc = st.sidebar.slider("MP Concentration (µg/mL)", 0, 2000, 1000)
 mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
-# --- Create and populate input vector ---
+# --- Create input vector ---
 input_df = pd.DataFrame(columns=feature_names)
-input_df.loc[0] = 0  # initialize all features to zero
-
-# Fill only the 3 features used in the model
-if "MP_Concentration" in input_df.columns:
-    input_df.at[0, "MP_Concentration"] = mp_conc
-if "MP_Size" in input_df.columns:
-    input_df.at[0, "MP_Size"] = mp_size
-if "Exposure_Time" in input_df.columns:
-    input_df.at[0, "Exposure_Time"] = exposure_time
+input_df.loc[0] = 0
+input_df.loc[0, "MP_Concentration"] = mp_conc
+input_df.loc[0, "MP_Size"] = mp_size
+input_df.loc[0, "Exposure_Time"] = exposure_time
 
 # --- Prediction ---
 pred = model.predict(input_df)[0]
 pred_label = "✅ Present" if pred == 1 else "❌ Absent"
 st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 
-# --- SHAP Explanation ---
-st.subheader("🔍 SHAP Explanation")
-shap_values = explainer.shap_values(input_df)
+# --- Load training data for evaluation plots ---
+if os.path.exists(DATA_PATH):
+    df = pd.read_csv(DATA_PATH)
+    X = df[feature_names]
+    y = df["Cetobacterium_Present"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Handle SHAP output structure
-if isinstance(shap_values, list):
-    shap_vector = shap_values[1][0]  # for binary classification
+    y_proba = model.predict_proba(X_test)[:, 1]
+    y_pred = model.predict(X_test)
+
+    # --- ROC Curve ---
+    fpr, tpr, _ = roc_curve(y_test, y_proba)
+    roc_auc = auc(fpr, tpr)
+    st.subheader("📈 ROC Curve (AUC)")
+    fig, ax = plt.subplots()
+    ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+    ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title('Receiver Operating Characteristic')
+    ax.legend(loc="lower right")
+    st.pyplot(fig)
+
+    # --- Precision-Recall Curve ---
+    precision, recall, _ = precision_recall_curve(y_test, y_proba)
+    st.subheader("📉 Precision-Recall Curve")
+    fig2, ax2 = plt.subplots()
+    ax2.plot(recall, precision, color='purple', lw=2)
+    ax2.set_xlabel('Recall')
+    ax2.set_ylabel('Precision')
+    ax2.set_title('Precision-Recall Curve")
+    st.pyplot(fig2)
+
+    # --- F1 Score and Report ---
+    st.subheader("📊 Classification Metrics")
+    f1 = f1_score(y_test, y_pred)
+    acc = accuracy_score(y_test, y_pred)
+    st.write(f"**F1 Score:** {f1:.2f}")
+    st.write(f"**Accuracy:** {acc:.2f}")
+    st.text(classification_report(y_test, y_pred))
+
+    # --- Learning Curve ---
+    st.subheader("📚 Learning Curve")
+    train_sizes, train_scores, test_scores = learning_curve(model, X, y, cv=5, scoring='f1', n_jobs=-1)
+    train_mean = np.mean(train_scores, axis=1)
+    test_mean = np.mean(test_scores, axis=1)
+
+    fig3, ax3 = plt.subplots()
+    ax3.plot(train_sizes, train_mean, 'o-', label="Training Score")
+    ax3.plot(train_sizes, test_mean, 'o-', label="Cross-Validation Score")
+    ax3.set_xlabel("Training Set Size")
+    ax3.set_ylabel("F1 Score")
+    ax3.set_title("Learning Curve")
+    ax3.legend()
+    st.pyplot(fig3)
+
+    # --- Feature Importance ---
+    st.subheader("📌 Feature Importance")
+    importances = pd.Series(model.feature_importances_, index=feature_names).sort_values()
+    fig4, ax4 = plt.subplots()
+    importances.plot(kind='barh', ax=ax4)
+    ax4.set_title("Feature Importance")
+    st.pyplot(fig4)
+
 else:
-    shap_vector = shap_values[0]     # newer SHAP versions
-
-shap_1d = np.array(shap_vector).flatten()
-features = input_df.columns.tolist()
-
-
-if len(shap_1d) != len(features):
-    st.error(f"❌ SHAP vector length ({len(shap_1d)}) does not match input features ({len(features)}).")
-    st.stop()
-st.write("🧪 Feature count:", len(features))
-st.write("🧪 SHAP vector length:", len(shap_1d))
-
-
-min_len = min(len(features), len(shap_1d))
-
-shap_df = pd.DataFrame({
-    "Feature": features[:min_len],
-    "SHAP Value": shap_1d[:min_len]
-}).sort_values(by="SHAP Value", key=abs, ascending=False)
-
-# --- Display SHAP Contributions ---
-top_shap = shap_df.head(10)
-st.subheader("📊 Top SHAP Contributions to Prediction")
-st.dataframe(top_shap)
-
-plt.figure(figsize=(6, 4))
-plt.barh(top_shap["Feature"], top_shap["SHAP Value"])
-plt.title("Top Features Driving the Prediction")
-plt.gca().invert_yaxis()
-st.pyplot(plt)
-
-# --- Global Feature Importance ---
-st.subheader("📈 Global Feature Importance")
-importances = pd.Series(model.feature_importances_, index=feature_names).sort_values()
-plt.figure(figsize=(6, 5))
-importances.tail(10).plot(kind='barh')
-plt.title("Most Important Features (Global)")
-st.pyplot(plt)
+    st.info("Training data not found – evaluation plots skipped.")
