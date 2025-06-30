@@ -34,10 +34,10 @@ mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
 # --- Create full-length input vector ---
-input_df = pd.DataFrame(columns=feature_names)
-input_df.loc[0] = 0  # initialize all features to zero
+# ✅ Step 1: Initialize full input row with all zeros
+input_df = pd.DataFrame([0] * len(feature_names), index=feature_names).T
 
-# Update user input values
+# ✅ Step 2: Safely update only known inputs
 if 'MP_Concentration' in input_df.columns:
     input_df.at[0, 'MP_Concentration'] = mp_conc
 if 'MP_Size' in input_df.columns:
