@@ -25,15 +25,17 @@ st.title("🧬 Cetobacterium Predictor - Microplastic Exposure")
 st.markdown("Predict the presence of *Cetobacterium* based on microplastic exposure conditions.")
 
 st.sidebar.header("🧪 Exposure Inputs")
-mp_type_pe = st.sidebar.selectbox("MP Type: PE", [0, 1])
-mp_type_ps = st.sidebar.selectbox("MP Type: PS", [0, 1])
+st.sidebar.header("🧪 Exposure Inputs")
 mp_conc = st.sidebar.slider("MP Concentration (µg/mL)", 0, 2000, 1000)
 mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
 # --- Create full-length input vector ---
 input_df = pd.DataFrame(columns=feature_names)
-input_df.loc[0] = 0  # All features set to 0
+input_df.loc[0] = 0
+input_df.loc[0, "MP_Concentration"] = mp_conc
+input_df.loc[0, "MP_Size"] = mp_size
+input_df.loc[0, "Exposure_Time"] = exposure_time
 
 # --- Fill in values from UI
 user_inputs = {
