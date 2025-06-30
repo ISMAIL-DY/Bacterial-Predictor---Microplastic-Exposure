@@ -44,7 +44,6 @@ st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 # --- SHAP explanation ---
 st.subheader("🔍 SHAP Explanation")
 shap_values = explainer.shap_values(input_df)
-shap.initjs()
 st_shap = shap.force_plot(explainer.expected_value[1], shap_values[1], input_df, matplotlib=True, show=False)
 st.pyplot(bbox_inches="tight", dpi=300)
 
