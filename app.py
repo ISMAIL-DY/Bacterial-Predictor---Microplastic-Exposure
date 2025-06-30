@@ -7,12 +7,12 @@ import numpy as np
 
 # --- Load trained model and feature names ---
 model = joblib.load("rf_model_cetobacterium.pkl")
-feature_names = joblib.load("rf_model_features.pkl")  # list of columns used during training
+feature_names = joblib.load("rf_model_features.pkl")
 explainer = shap.TreeExplainer(model)
 
 # --- App title ---
 st.title("🧬 Cetobacterium Predictor - Microplastic Exposure")
-st.markdown("Predict the presence of *Cetobacterium* based on microplastic exposure conditions using a trained ML model.")
+st.markdown("Predict the presence of *Cetobacterium* in fish microbiomes based on microplastic exposure conditions.")
 
 # --- Sidebar inputs ---
 st.sidebar.header("🧪 Exposure Inputs")
@@ -31,10 +31,11 @@ user_input = {
     "MP_Type_PS": mp_type_ps
 }
 
+# Build input DataFrame and reindex to match trained features
 input_df = pd.DataFrame([user_input])
 input_df = input_df.reindex(columns=feature_names, fill_value=0)
 
-# --- Prediction ---
+# --- Make prediction ---
 pred = model.predict(input_df)[0]
 pred_label = "✅ Present" if pred == 1 else "❌ Absent"
 st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
@@ -45,30 +46,32 @@ shap_values = explainer.shap_values(input_df)
 
 # Safely extract SHAP vector
 if isinstance(shap_values, list):
-    shap_vector = shap_values[1][0]  # for binary classification (older versions)
+    shap_vector = shap_values[1][0]  # class 1 explanation
 else:
-    shap_vector = shap_values[0]  # newer SHAP
+    shap_vector = shap_values[0]     # fallback for newer SHAP versions
 
+# Prepare SHAP bar chart
 shap_1d = shap_vector.flatten()
 features = input_df.columns.tolist()
 
-if len(features) != len(shap_1d):
-    st.error("❌ Mismatch: SHAP vector and feature count do not align.")
-else:
-    shap_df = pd.DataFrame({
-        "Feature": features,
-        "SHAP Value": shap_1d
-    }).sort_values(by="SHAP Value", key=abs, ascending=False)
+if len(shap_1d) != len(features):
+    st.error(f"❌ SHAP vector length ({len(shap_1d)}) does not match input features ({len(features)}).")
+    st.stop()
 
-    top_shap = shap_df.head(10)
-    st.subheader("📊 Top SHAP Contributions to Prediction")
-    st.dataframe(top_shap)
+shap_df = pd.DataFrame({
+    "Feature": features,
+    "SHAP Value": shap_1d
+}).sort_values(by="SHAP Value", key=abs, ascending=False)
 
-    plt.figure(figsize=(6, 4))
-    plt.barh(top_shap["Feature"], top_shap["SHAP Value"])
-    plt.title("Top Features Driving the Prediction")
-    plt.gca().invert_yaxis()
-    st.pyplot(plt)
+top_shap = shap_df.head(10)
+st.subheader("📊 Top SHAP Contributions to Prediction")
+st.dataframe(top_shap)
+
+plt.figure(figsize=(6, 4))
+plt.barh(top_shap["Feature"], top_shap["SHAP Value"])
+plt.title("Top Features Driving the Prediction")
+plt.gca().invert_yaxis()
+st.pyplot(plt)
 
 # --- Global Feature Importance ---
 st.subheader("📈 Global Feature Importance")
