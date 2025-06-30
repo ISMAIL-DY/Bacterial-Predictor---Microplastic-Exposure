@@ -54,6 +54,8 @@ pred = model.predict(input_df)[0]
 pred_label = "✅ Present" if pred == 1 else "❌ Absent"
 st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 
+assert input_df.shape[1] == len(feature_names), "❌ Feature count mismatch before SHAP"
+
 # --- SHAP Explanation ---
 st.subheader("🔍 SHAP Explanation")
 shap_values = explainer.shap_values(input_df)
