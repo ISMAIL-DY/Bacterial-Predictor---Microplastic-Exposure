@@ -43,8 +43,10 @@ st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 
 # --- SHAP explanation ---
 st.subheader("🔍 SHAP Explanation")
-shap_values = explainer.shap_values(input_df)
-st_shap = shap.force_plot(explainer.expected_value[1], shap_values[1], input_df, matplotlib=True, show=False)
+shap_values = explainer.shap_values(input_df)  # this is a single array for binary classification
+
+# Use directly, no index
+st_shap = shap.force_plot(explainer.expected_value, shap_values, input_df, matplotlib=True, show=False)
 st.pyplot(bbox_inches="tight", dpi=300)
 
 # --- Feature importance plot ---
