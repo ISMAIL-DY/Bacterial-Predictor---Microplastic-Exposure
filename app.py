@@ -13,13 +13,11 @@ MODEL_PATH = "rf_model_cetobacterium.pkl"
 FEATURES_PATH = "rf_model_features.pkl"
 DATA_PATH = "data/final_selected_features_dataset.csv"
 
-# --- Check for model and train if missing ---
+# --- Train model if missing ---
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
-    st.warning("⚠️ Model not found. Training a new one...")
-
+    st.warning("⚠️ Model not found. Training now...")
     df = pd.read_csv(DATA_PATH)
 
-    # Define features
     mp_type_cols = [col for col in df.columns if col.startswith("MP_Type_")]
     species_cols = [col for col in df.columns if col.startswith("Species_")]
     features = mp_type_cols + ['MP_Concentration', 'MP_Size', 'Exposure_Time'] + species_cols
@@ -27,28 +25,23 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
     X = df[features]
     y = df['Cetobacterium_Present']
 
-    # Train/test split and model
     X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
     model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
     model.fit(X_train, y_train)
 
-    # Save for future runs
     joblib.dump(model, MODEL_PATH)
     joblib.dump(X_train.columns.tolist(), FEATURES_PATH)
-
 else:
     model = joblib.load(MODEL_PATH)
 
-# ✅ Continue after safe model load
+# --- Load features and SHAP ---
 feature_names = joblib.load(FEATURES_PATH)
 explainer = shap.TreeExplainer(model)
 
-
-# --- App title ---
+# --- Streamlit UI ---
 st.title("🧬 Cetobacterium Predictor - Microplastic Exposure")
-st.markdown("Predict the presence of *Cetobacterium* in fish microbiomes based on microplastic exposure conditions.")
+st.markdown("Predict the presence of *Cetobacterium* based on microplastic exposure conditions.")
 
-# --- Sidebar inputs ---
 st.sidebar.header("🧪 Exposure Inputs")
 mp_type_pe = st.sidebar.selectbox("MP Type: PE", [0, 1])
 mp_type_ps = st.sidebar.selectbox("MP Type: PS", [0, 1])
@@ -56,20 +49,17 @@ mp_conc = st.sidebar.slider("MP Concentration (µg/mL)", 0, 2000, 1000)
 mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
-# --- Construct input row ---
-user_input = {
-    "MP_Concentration": mp_conc,
-    "MP_Size": mp_size,
-    "Exposure_Time": exposure_time,
-    "MP_Type_PE": mp_type_pe,
-    "MP_Type_PS": mp_type_ps
-}
+# --- Input Vector Construction ---
+input_df = pd.DataFrame([np.zeros(len(feature_names))], columns=feature_names)
+input_df["MP_Concentration"] = mp_conc
+input_df["MP_Size"] = mp_size
+input_df["Exposure_Time"] = exposure_time
+if "MP_Type_PE" in input_df.columns:
+    input_df["MP_Type_PE"] = mp_type_pe
+if "MP_Type_PS" in input_df.columns:
+    input_df["MP_Type_PS"] = mp_type_ps
 
-# Build input DataFrame and reindex to match trained features
-input_df = pd.DataFrame([user_input])
-input_df = input_df.reindex(columns=feature_names, fill_value=0)
-
-# --- Make prediction ---
+# --- Prediction ---
 pred = model.predict(input_df)[0]
 pred_label = "✅ Present" if pred == 1 else "❌ Absent"
 st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
@@ -78,13 +68,12 @@ st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 st.subheader("🔍 SHAP Explanation")
 shap_values = explainer.shap_values(input_df)
 
-# Safely extract SHAP vector
+# Handle SHAP output shape
 if isinstance(shap_values, list):
-    shap_vector = shap_values[1][0]  # class 1 explanation
+    shap_vector = shap_values[1][0]
 else:
-    shap_vector = shap_values[0]     # fallback for newer SHAP versions
+    shap_vector = shap_values[0]
 
-# Prepare SHAP bar chart
 shap_1d = shap_vector.flatten()
 features = input_df.columns.tolist()
 
@@ -92,10 +81,8 @@ if len(shap_1d) != len(features):
     st.error(f"❌ SHAP vector length ({len(shap_1d)}) does not match input features ({len(features)}).")
     st.stop()
 
-shap_df = pd.DataFrame({
-    "Feature": features,
-    "SHAP Value": shap_1d
-}).sort_values(by="SHAP Value", key=abs, ascending=False)
+shap_df = pd.DataFrame({"Feature": features, "SHAP Value": shap_1d})
+shap_df = shap_df.sort_values(by="SHAP Value", key=abs, ascending=False)
 
 top_shap = shap_df.head(10)
 st.subheader("📊 Top SHAP Contributions to Prediction")
