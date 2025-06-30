@@ -41,12 +41,9 @@ pred = model.predict(input_df)[0]
 pred_label = "✅ Present" if pred == 1 else "❌ Absent"
 st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 
-# --- SHAP explanation ---
-st.subheader("🔍 SHAP Explanation")
-shap_values = explainer.shap_values(input_df)  # this is a single array for binary classification
-
-# Use directly, no index
-st_shap = shap.force_plot(explainer.expected_value, shap_values, input_df, matplotlib=True, show=False)
+# SHAP Summary Plot (bar format – most robust)
+st.subheader("🔍 SHAP Summary Plot")
+shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
 st.pyplot(bbox_inches="tight", dpi=300)
 
 # --- Feature importance plot ---
