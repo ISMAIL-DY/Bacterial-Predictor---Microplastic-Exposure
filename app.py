@@ -37,7 +37,7 @@ with col2:
     master_logo = Image.open("cbbda.jpg")
     st.image(master_logo, width=170, caption="Master in Computational Biology & Data Analysis")
 
-st.title("🧬 Bacterial Predictor - Microplastic Exposure")
+st.title("Bacterial Predictor - Microplastic Exposure")
 
 # --- Select target bacterium ---
 target = st.radio("Select Bacterium to Predict:", ["Cetobacterium", "Rhizobiales"])
@@ -66,14 +66,14 @@ mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
 # --- App Info Sidebar ---
-with st.sidebar.expander("📘 About this app"):
+with st.sidebar.expander("About this app"):
     st.write("""
     This app predicts the presence of *Cetobacterium* or *Rhizobiales* in fish gut microbiota
     based on microplastic exposure conditions.
 
-    - 🎯 Predicts binary presence using Random Forest
-    - 📊 Includes evaluation plots, batch CSV uploads, and feature analysis
-    - 🧪 Input features: MP_Concentration, MP_Size, Exposure_Time
+    - Predicts binary presence using Random Forest
+    - Includes evaluation plots, batch CSV uploads, and feature analysis
+    - Input features: MP_Concentration, MP_Size, Exposure_Time
 
     Created by: Mohamed Ismail Drissi Yahyaoui  
     """)
