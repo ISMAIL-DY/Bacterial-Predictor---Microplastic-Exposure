@@ -21,6 +21,22 @@ FEATURE_PATHS = {
     "Rhizobiales": "rf_model_features.pkl"
 }
 DATA_PATH = "final_selected_features_dataset.csv"
+from PIL import Image
+
+# --- Display Logos ---
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    faculty_logo = Image.open("meakxa38.png")
+    st.image(faculty_logo, use_column_width=True, caption="Faculty Of Medecine and Pharmacie Rabat")
+
+with col2:
+    master_logo = Image.open("cbbda.jpg")
+    st.image(master_logo, use_column_width=True, caption="master of computational biology bioinformatics and data_analysis")
+
+st.image("faculty_logo.png", width=200)
+st.image("master_logo.png", width=200)
+st.title("🧬 Bacterial Predictor - Microplastic Exposure")
 
 # --- Select target bacterium ---
 st.title("🧬 Bacterial Predictor - Microplastic Exposure")
