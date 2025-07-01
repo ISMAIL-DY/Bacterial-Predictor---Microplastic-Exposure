@@ -34,8 +34,8 @@ with col2:
     master_logo = Image.open("cbbda.jpg")
     st.image(master_logo, use_column_width=True, caption="master of computational biology bioinformatics and data_analysis")
 
-st.image("faculty_logo.png", width=200)
-st.image("master_logo.png", width=200)
+st.image("meakxa38.png", width=200)
+st.image(cbbda.jpg", width=200)
 st.title("🧬 Bacterial Predictor - Microplastic Exposure")
 
 # --- Select target bacterium ---
