@@ -1,4 +1,4 @@
-# Bacterial Predictor - Microplastic Exposure
+# Bacterial Predictor - Microplastic Exposure FMPR UM6P
 
 This Streamlit web application predicts the presence of **Cetobacterium** or **Rhizobiales** in fish gut microbiota based on **microplastic (MP) exposure conditions**.
 
