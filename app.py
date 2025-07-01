@@ -4,7 +4,6 @@ import numpy as np
 import joblib
 import os
 import matplotlib.pyplot as plt
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     roc_curve, auc, precision_recall_curve, f1_score, accuracy_score,
     classification_report
@@ -12,22 +11,32 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split, learning_curve
 
 # --- Paths ---
-MODEL_PATH = "rf_model_cetobacterium.pkl"
-FEATURES_PATH = "rf_model_features.pkl"
+MODEL_PATHS = {
+    "Cetobacterium": "rf_model_cetobacterium.pkl",
+    "Rhizobiales": "rf_model_rhizobiales.pkl"
+}
+FEATURE_PATHS = {
+    "Cetobacterium": "rf_model_features.pkl",
+    "Rhizobiales": "rf_model_features.pkl"
+}
 DATA_PATH = "final_selected_features_dataset.csv"
 
+# --- Select target bacterium ---
+st.title("🧬 Bacterial Predictor - Microplastic Exposure")
+target = st.radio("Select Bacterium to Predict:", ["Cetobacterium", "Rhizobiales"])
+
 # --- Load model and features ---
-if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
-    st.error("❌ Model or feature file is missing. Please upload them.")
+model_path = MODEL_PATHS[target]
+features_path = FEATURE_PATHS[target]
+
+if not os.path.exists(model_path) or not os.path.exists(features_path):
+    st.error(f"❌ Missing model or features for {target}")
     st.stop()
 
-model = joblib.load(MODEL_PATH)
-feature_names = joblib.load(FEATURES_PATH)
+model = joblib.load(model_path)
+feature_names = joblib.load(features_path)
 
-# --- Streamlit UI ---
-st.title("🧬 Cetobacterium Predictor - Microplastic Exposure")
-st.markdown("Predict the presence of *Cetobacterium* based on microplastic exposure conditions.")
-
+# --- UI Inputs ---
 st.sidebar.header("🧪 Exposure Inputs")
 mp_conc = st.sidebar.slider("MP Concentration (µg/mL)", 0, 2000, 1000)
 mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
@@ -41,17 +50,45 @@ input_df.loc[0, "MP_Size"] = mp_size
 input_df.loc[0, "Exposure_Time"] = exposure_time
 
 # --- Prediction ---
+proba = model.predict_proba(input_df)[0][1]
 pred = model.predict(input_df)[0]
 pred_label = "✅ Present" if pred == 1 else "❌ Absent"
-st.subheader(f"Prediction: *Cetobacterium* is **{pred_label}**")
 
-# --- Load training data for evaluation plots ---
+st.subheader(f"Prediction: *{target}* is **{pred_label}**")
+st.metric(label="📊 Probability of Presence", value=f"{proba:.2%}")
+
+# --- Download input row ---
+st.download_button(
+    label="📥 Download This Input",
+    data=input_df.to_csv(index=False),
+    file_name=f"{target.lower()}_input.csv",
+    mime="text/csv"
+)
+
+# --- Top Feature Importances ---
+st.subheader("🔍 Most Important Features")
+importances = pd.Series(model.feature_importances_, index=feature_names)
+top_features = importances.sort_values(ascending=False).head(3)
+st.write(top_features)
+
+# --- Upload for Batch Prediction ---
+st.subheader("📂 Batch Prediction from Uploaded File")
+uploaded = st.file_uploader("Upload CSV with same features", type="csv")
+if uploaded:
+    df_upload = pd.read_csv(uploaded)
+    df_upload = df_upload.reindex(columns=feature_names, fill_value=0)
+    preds = model.predict(df_upload)
+    df_upload["Prediction"] = ["Present" if p == 1 else "Absent" for p in preds]
+    st.dataframe(df_upload)
+    st.download_button(f"⬇️ Download {target} Predictions", df_upload.to_csv(index=False), f"{target.lower()}_predictions.csv", "text/csv")
+
+# --- Evaluation Plots ---
 if os.path.exists(DATA_PATH):
     df = pd.read_csv(DATA_PATH)
     X = df[feature_names]
-    y = df["Cetobacterium_Present"]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    y = df[f"{target}_Present"]
 
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     y_proba = model.predict_proba(X_test)[:, 1]
     y_pred = model.predict(X_test)
 
@@ -60,25 +97,25 @@ if os.path.exists(DATA_PATH):
     roc_auc = auc(fpr, tpr)
     st.subheader("📈 ROC Curve (AUC)")
     fig, ax = plt.subplots()
-    ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+    ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'AUC = {roc_auc:.2f}')
     ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
-    ax.set_title('Receiver Operating Characteristic')
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
+    ax.set_title("Receiver Operating Characteristic")
     ax.legend(loc="lower right")
     st.pyplot(fig)
 
-    # --- Precision-Recall Curve ---
+    # --- PR Curve ---
     precision, recall, _ = precision_recall_curve(y_test, y_proba)
     st.subheader("📉 Precision-Recall Curve")
     fig2, ax2 = plt.subplots()
     ax2.plot(recall, precision, color='purple', lw=2)
-    ax2.set_xlabel('Recall')
-    ax2.set_ylabel('Precision')
-    ax2.set_title('Precision-Recall Curve')
+    ax2.set_xlabel("Recall")
+    ax2.set_ylabel("Precision")
+    ax2.set_title("Precision-Recall Curve")
     st.pyplot(fig2)
 
-    # --- F1 Score and Report ---
+    # --- F1 Score ---
     st.subheader("📊 Classification Metrics")
     f1 = f1_score(y_test, y_pred)
     acc = accuracy_score(y_test, y_pred)
@@ -88,7 +125,8 @@ if os.path.exists(DATA_PATH):
 
     # --- Learning Curve ---
     st.subheader("📚 Learning Curve")
-    train_sizes, train_scores, test_scores = learning_curve(model, X, y, cv=5, scoring='f1', n_jobs=-1)
+    from sklearn.model_selection import learning_curve
+    train_sizes, train_scores, test_scores = learning_curve(model, X, y, cv=5, scoring="f1", n_jobs=-1)
     train_mean = np.mean(train_scores, axis=1)
     test_mean = np.mean(test_scores, axis=1)
 
@@ -102,12 +140,11 @@ if os.path.exists(DATA_PATH):
     st.pyplot(fig3)
 
     # --- Feature Importance ---
-    st.subheader("📌 Feature Importance")
-    importances = pd.Series(model.feature_importances_, index=feature_names).sort_values()
+    st.subheader("📌 Full Feature Importance")
     fig4, ax4 = plt.subplots()
-    importances.plot(kind='barh', ax=ax4)
+    importances.sort_values().plot(kind="barh", ax=ax4)
     ax4.set_title("Feature Importance")
     st.pyplot(fig4)
 
 else:
-    st.info("Training data not found – evaluation plots skipped.")
+    st.warning("⚠️ Training data not found. Evaluation plots skipped.")
