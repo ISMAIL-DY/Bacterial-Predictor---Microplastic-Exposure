@@ -4,9 +4,10 @@ import numpy as np
 import joblib
 import os
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.metrics import (
     roc_curve, auc, precision_recall_curve, f1_score, accuracy_score,
-    classification_report
+    classification_report, confusion_matrix
 )
 from sklearn.model_selection import train_test_split, learning_curve
 
@@ -25,6 +26,12 @@ DATA_PATH = "final_selected_features_dataset.csv"
 st.title("🧬 Bacterial Predictor - Microplastic Exposure")
 target = st.radio("Select Bacterium to Predict:", ["Cetobacterium", "Rhizobiales"])
 
+# --- Description of Selected Bacterium ---
+if target == "Cetobacterium":
+    st.info("Cetobacterium* is a key gut microbe in fish, often studied in response to microplastics.")
+else:
+    st.info("Rhizobiales* are bacteria with environmental relevance and potential as indicators in microbiome shifts.")
+
 # --- Load model and features ---
 model_path = MODEL_PATHS[target]
 features_path = FEATURE_PATHS[target]
@@ -41,6 +48,21 @@ st.sidebar.header("Exposure Inputs")
 mp_conc = st.sidebar.slider("MP Concentration (µg/mL)", 0, 2000, 1000)
 mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
+
+
+# --- App Info Sidebar ---
+with st.sidebar.expander(" About this app"):
+    st.write("""
+    This app predicts the presence of *Cetobacterium* or *Rhizobiales* in fish gut microbiota
+    based on microplastic exposure conditions.
+
+    -  Predicts binary presence using Random Forest
+    -  Includes evaluation plots, batch CSV uploads, and feature analysis
+    -  Input features: MP_Concentration, MP_Size, Exposure_Time
+
+    Created by: Mohamed Ismail Drissi Yahyaoui  
+    
+    """)
 
 # --- Create input vector ---
 input_df = pd.DataFrame(columns=feature_names)
@@ -123,9 +145,17 @@ if os.path.exists(DATA_PATH):
     st.write(f"**Accuracy:** {acc:.2f}")
     st.text(classification_report(y_test, y_pred))
 
+    # --- Confusion Matrix ---
+    st.subheader("Confusion Matrix")
+    cm = confusion_matrix(y_test, y_pred)
+    fig_cm, ax_cm = plt.subplots()
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax_cm)
+    ax_cm.set_xlabel("Predicted")
+    ax_cm.set_ylabel("Actual")
+    st.pyplot(fig_cm)
+
     # --- Learning Curve ---
     st.subheader("Learning Curve")
-    from sklearn.model_selection import learning_curve
     train_sizes, train_scores, test_scores = learning_curve(model, X, y, cv=5, scoring="f1", n_jobs=-1)
     train_mean = np.mean(train_scores, axis=1)
     test_mean = np.mean(test_scores, axis=1)
