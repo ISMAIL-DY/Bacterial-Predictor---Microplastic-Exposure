@@ -5,6 +5,7 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+from PIL import Image
 from sklearn.metrics import (
     roc_curve, auc, precision_recall_curve, f1_score, accuracy_score,
     classification_report, confusion_matrix
@@ -21,32 +22,27 @@ FEATURE_PATHS = {
     "Rhizobiales": "rf_model_features.pkl"
 }
 DATA_PATH = "final_selected_features_dataset.csv"
-from PIL import Image
 
-# --- Display Logos ---
-col1, col2 = st.columns([1, 1])
-
+# --- Display Logos (side-by-side) ---
+col1, col2 = st.columns(2)
 with col1:
     faculty_logo = Image.open("meakxa38.png")
-    st.image(faculty_logo, use_column_width=True, caption="Faculty Of Medecine and Pharmacie Rabat")
+    st.image(faculty_logo, use_container_width=True, caption="Faculty of Medicine and Pharmacy Rabat")
 
 with col2:
     master_logo = Image.open("cbbda.jpg")
-    st.image(master_logo, use_column_width=True, caption="master of computational biology bioinformatics and data_analysis")
+    st.image(master_logo, use_container_width=True, caption="Master in Computational Biology & Data Analysis")
 
-st.image("meakxa38.png", width=200)
-st.image(cbbda.jpg", width=200)
 st.title("🧬 Bacterial Predictor - Microplastic Exposure")
 
 # --- Select target bacterium ---
-st.title("🧬 Bacterial Predictor - Microplastic Exposure")
 target = st.radio("Select Bacterium to Predict:", ["Cetobacterium", "Rhizobiales"])
 
 # --- Description of Selected Bacterium ---
 if target == "Cetobacterium":
-    st.info("Cetobacterium* is a key gut microbe in fish, often studied in response to microplastics.")
+    st.info("*Cetobacterium* is a key gut microbe in fish, often studied in response to microplastics.")
 else:
-    st.info("Rhizobiales* are bacteria with environmental relevance and potential as indicators in microbiome shifts.")
+    st.info("*Rhizobiales* are bacteria with environmental relevance and potential as indicators in microbiome shifts.")
 
 # --- Load model and features ---
 model_path = MODEL_PATHS[target]
@@ -65,19 +61,17 @@ mp_conc = st.sidebar.slider("MP Concentration (µg/mL)", 0, 2000, 1000)
 mp_size = st.sidebar.slider("MP Size (µm)", 0, 1000, 300)
 exposure_time = st.sidebar.slider("Exposure Time (days)", 1, 30, 14)
 
-
 # --- App Info Sidebar ---
-with st.sidebar.expander(" About this app"):
+with st.sidebar.expander("📘 About this app"):
     st.write("""
     This app predicts the presence of *Cetobacterium* or *Rhizobiales* in fish gut microbiota
     based on microplastic exposure conditions.
 
-    -  Predicts binary presence using Random Forest
-    -  Includes evaluation plots, batch CSV uploads, and feature analysis
-    -  Input features: MP_Concentration, MP_Size, Exposure_Time
+    - 🎯 Predicts binary presence using Random Forest
+    - 📊 Includes evaluation plots, batch CSV uploads, and feature analysis
+    - 🧪 Input features: MP_Concentration, MP_Size, Exposure_Time
 
     Created by: Mohamed Ismail Drissi Yahyaoui  
-    
     """)
 
 # --- Create input vector ---
