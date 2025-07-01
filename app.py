@@ -31,11 +31,11 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     faculty_logo = Image.open("meakxa38.png")
-    st.image(faculty_logo, width=150, caption="Faculty of Medicine and Pharmacy Rabat")
+    st.image(faculty_logo, width=170, caption="Faculty of Medicine and Pharmacy Rabat")
 
 with col2:
     master_logo = Image.open("cbbda.jpg")
-    st.image(master_logo, width=150, caption="Master in Computational Biology & Data Analysis")
+    st.image(master_logo, width=170, caption="Master in Computational Biology & Data Analysis")
 
 st.title("🧬 Bacterial Predictor - Microplastic Exposure")
 
