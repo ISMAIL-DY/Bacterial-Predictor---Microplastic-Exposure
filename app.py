@@ -24,14 +24,18 @@ FEATURE_PATHS = {
 DATA_PATH = "final_selected_features_dataset.csv"
 
 # --- Display Logos (side-by-side) ---
-col1, col2 = st.columns(2)
+from PIL import Image
+
+# --- Display Logos (side-by-side, slightly reduced size) ---
+col1, col2 = st.columns([1, 1])
+
 with col1:
     faculty_logo = Image.open("meakxa38.png")
-    st.image(faculty_logo, use_container_width=True, caption="Faculty of Medicine and Pharmacy Rabat")
+    st.image(faculty_logo, width=150, caption="Faculty of Medicine and Pharmacy Rabat")
 
 with col2:
     master_logo = Image.open("cbbda.jpg")
-    st.image(master_logo, use_container_width=True, caption="Master in Computational Biology & Data Analysis")
+    st.image(master_logo, width=150, caption="Master in Computational Biology & Data Analysis")
 
 st.title("🧬 Bacterial Predictor - Microplastic Exposure")
 
