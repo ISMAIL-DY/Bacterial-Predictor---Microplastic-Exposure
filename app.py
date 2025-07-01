@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split, learning_curve
 # --- Paths ---
 MODEL_PATH = "rf_model_cetobacterium.pkl"
 FEATURES_PATH = "rf_model_features.pkl"
-DATA_PATH = "data/final_selected_features_dataset.csv"
+DATA_PATH = "final_selected_features_dataset.csv"
 
 # --- Load model and features ---
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
